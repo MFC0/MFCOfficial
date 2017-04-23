@@ -1,0 +1,14 @@
+body {
+    background-color: lightblue;
+    background-image: url('http://weknowyourdreams.com/images/beautiful/beautiful-07.jpg');
+}
+h1 {
+    color: red;
+    text-align: center;
+}
+p {
+    font-family: verdana;
+    text-align: center;
+    color: white;
+    font-size: 14px;
+}
