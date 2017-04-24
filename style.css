@@ -1,9 +1,11 @@
 body {
-    background-image: url('http://www.no-zaku.com/background/wp-content/uploads/sites/9/2016/11/Pretty-Royalty-Free-Background.jpg');
+    background-image: url('http://res.freestockphotos.biz/pictures/9/9090-an-abstract-blue-background-pv.jpg');
 }
 h1 {
     color: red;
     text-align: center;
+    font-size: 4vw;
+    font-family: 'Coda', cursive;
 }
 p {
     font-family: verdana;
