@@ -1,7 +1,7 @@
 h1 {
   color: white;
   text-align: center;
-  font: verdana;
+  font-family: verdana;
 }
 body {
   background-image: url("https://upload.wikimedia.org/wikipedia/commons/3/31/Red_wooden_furniture_interior_design_texture.jpg");
