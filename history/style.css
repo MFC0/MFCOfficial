@@ -6,3 +6,7 @@ h1 {
   font-family: arial;
   color: white;
 }
+p {
+  color: blue;
+  font-size: 15;
+}
