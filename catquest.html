@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+<p>
+import requests
+print"Welcome to the Python weather database!"
+while True:
+    a = raw_input("\nTo find the weather in a zipcode, type 'zipcode'. To find weather for a city, type 'city'. ")
+    if a.lower() == "zipcode":
+        try:
+            print"\nTemperature in Celsius: "+str(int(int(requests.get("http://api.openweathermap.org/data/2.5/weather?zip="+raw_input("\nWhat zipcode would you like me to find the temperature for? ")+",us&appid=d279148384493f8341a747bea5fd7d68").json()["main"]["temp"])-273.15))
+        except KeyError:
+            print"\nThe zipcode you have requested is not a catalogued zipcode in the USA."
+    elif a.lower() == "city":
+        try:
+            print"\nTemperature in Celsius: "+str(int(int(requests.get("http://api.openweathermap.org/data/2.5/weather?q="+raw_input("\nWhat city would you like me to find the temperature for? ")+"&appid=d279148384493f8341a747bea5fd7d68").json()["main"]["temp"])-273.15))
+        except KeyError:
+            print"\nThe city you have requested is not a catalouged city in the USA."
+    else:
+        print"'"+a+"' is not a valid option"
+
+"""
+You are almost yet to be to the end
+But one thing remains 'till you lead the clan
+
+miningfatcatsclan@gmail.com
+Password: meowmeowmeow
+"""
+</p>
+</head>
+</html>
