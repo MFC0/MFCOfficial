@@ -1,0 +1,177 @@
+File 1 (recieve.py):
+
+from flask import Flask, request, redirect
+from twilio.twiml.messaging_response import MessagingResponse
+import spread
+
+app = Flask(__name__)
+add = ["sign me up", "sign up", "register"]
+delete = ["sign me off", "sign off", "delete my account"]
+@app.route("/", methods=['GET', 'POST'])
+def hello_monkey():
+    """Respond to incoming calls with a simple text message."""
+    n = str(request.form["Body"]).lower().replace(".", "").replace("!", "").replace(",", "").replace("?", "")
+    if n in add:
+        resp = MessagingResponse()
+        if spread.add(int(str(request.form["From"])[1:])):
+            resp.message("You are now signed up for Gabe's weather service! Text 'Delete my account' any time to delete your account.")
+        else:
+            resp.message("You already have an account!")
+        return str(resp)
+    elif n in delete:
+        resp = MessagingResponse()
+        if not spread.check(int(str(request.form["From"])[1:])):
+            resp.message("You don't appear to have an account!")
+        else:
+            spread.delete(int(str(request.form["From"])[1:]))
+            resp.message("You are now signed off of Gabe's weather service. Text 'Sign me up' any time to start your account again.")
+        return str(resp)
+    else:
+        resp = MessagingResponse()
+        resp.message("Text 'Sign me up' to sign you up any time, or 'delete my account' to delete your account. Text me at +16467161404 any time to report a bug")
+        return str(resp)
+
+if __name__ == "__main__":
+    app.run(debug=True)
+
+File 2 (weather.py):
+
+print "Started!"
+
+import requests
+print "Requests loaded!"
+from twilio.rest import Client
+print "Twilio loaded!"
+import gspread
+print "Gspread loaded!"
+from oauth2client.service_account import ServiceAccountCredentials
+print "Oauth2client loaded!"
+import time
+print "Time loaded!"
+import datetime
+print "Datetime loaded!"
+
+print "All modules successfully loaded!"
+
+scope = ['https://spreadsheets.google.com/feeds']
+creds = ServiceAccountCredentials.from_json_keyfile_name('client_secret.json', scope)
+client = gspread.authorize(creds)
+sheet = client.open("Phone Numbers").sheet1
+print "Spreadsheet successfully loaded!"
+
+def getweather():
+    site = requests.get("http://api.openweathermap.org/data/2.5/weather?zip=10002,us&appid=d279148384493f8341a747bea5fd7d68").json()
+    print "Openweathermap site successfully loaded!"
+    degrees = int((int(site["main"]["temp"]) * 9 / 5) - 459.67)
+    if degrees < 21:
+        rec = "staying inside as much as you can! It's chilly outside!"
+    elif degrees < 32:
+        rec = "trying to stay inside, but if you need to go outside, wear coats."
+    elif degrees < 45:
+        rec = "ideally having a mostly inside day, but you could probably go outside by wearing a sweater/coat."
+    elif degrees < 60:
+        rec = "going outside on parts of the day. It's fairly nice out -- but maybe wear a sweater."
+    elif degrees < 70:
+        rec = "wearing a T-shirt and going outside! It's beautiful out!"
+    elif degrees < 80:
+        rec = "going outside! It's beautiful out. Might get a bit hot though."
+    elif degrees < 90:
+        rec = "staying inside a lot of the time -- but maybe going outside a bit -- it's pretty hot out!"
+    elif degrees < 95:
+        rec = "staying inside as much as you can! It's boiling out!"
+    else:
+        rec = "staying inside as much as possible! It's 95+ out!"
+    sky = site["weather"][0]["description"]
+    if sky == "clear sky":
+        sky = "clear skies"
+    low = int(int(int(site["main"]["temp_min"]) * 9 / 5) - 459.67)
+    high = int(int(int(site["main"]["temp_max"]) * 9 / 5) - 459.67)
+    wind = int(site["wind"]["speed"])
+    send = str("Hello! Your daily weather report: it is "+ str(degrees)+ " degrees Fahrenheit out, here at NEST+m! I would recommend "+ str(rec) + " Today, you can look for some "+ str(sky)+ " with a low of "+ str(int(low)) + ", a high of "+ str(int(high)) + ", and a wind speed of "+ str(wind)+ " mph!")
+    account_sid = "AC44169f82a20302eb01f3548a3bffc40e"
+    auth_token = "1d9684220523b2ca2008ff4858c2ca53"
+    client = Client(account_sid, auth_token)
+    ls = []
+    list_of_hashes = sheet.get_all_records()
+    for item in list_of_hashes:
+        ls.append(item["phones"])
+    try:
+        ls.remove("")
+    except:
+        pass
+    for person in ls:
+        client.messages.create(to=person, from_="+13476730128", body=send)
+        print "Message successfully sent to " + str(person) + "!"
+
+while 1:
+    time.sleep(0.9)
+    weekday = datetime.datetime.now().weekday()
+    hour = datetime.datetime.now().hour
+    minute = datetime.datetime.now().minute
+    second = datetime.datetime.now().second
+    if weekday < 5 and hour == 7 and minute == 20 and second == 0 or (weekday > 4 and hour == 10 and minute == 00 and second == 00):
+        getweather()
+
+File 3 (spread.py):
+
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+scope = ['https://spreadsheets.google.com/feeds']
+creds = ServiceAccountCredentials.from_json_keyfile_name('client_secret.json', scope)
+client = gspread.authorize(creds)
+sheet = client.open("Phone Numbers").sheet1
+
+def add(num):
+    ls = []
+    list_of_hashes = sheet.get_all_records()
+    for item in list_of_hashes:
+        ls.append(item["phones"])
+    if not(num in ls):
+        sheet.update_cell(len(list_of_hashes) + 2, 1, num)
+        return True
+
+def checkadd(num):
+    ls = []
+    list_of_hashes = sheet.get_all_records()
+    for item in list_of_hashes:
+        ls.append(item["phones"])
+    if num in ls:
+        return False
+    else:
+        return True
+
+def delete(num):
+    ls = []
+    list_of_hashes = sheet.get_all_records()
+    for item in list_of_hashes:
+        ls.append(item["phones"])
+    try:
+        a = ls.index(int(num)) + 2
+        sheet.update_cell(a, 1, '')
+    except:
+        return False
+
+def check(num):
+    ls = []
+    list_of_hashes = sheet.get_all_records()
+    for item in list_of_hashes:
+        ls.append(item["phones"])
+    if num in ls:
+        return True
+    else:
+        return False
+
+File 4 (client_secret.json):
+
+{
+  "type": "service_account",
+  "project_id": "phone-numbers-170313",
+  "private_key_id": "b322fe44ac5ead9895357b60b99dc1d89d060db7",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC2Mkp9IdPn/KEN\n5GoElQBhEpwQfVdO5OhmSISz7rcZKkukl5Idx+Zd+7pA83At2wpm7q3B00u0sow5\n9qkfukCXPVV5l0taUXyfVAoOBftygJ7pkJFL4PbBP36PBwJVKBZW25WrXSZMnTRF\nuKd8YCdZ4V4qcr/3fyTturhxBJu33ihAlD/M44Ky1LFwzwNqz/1TIKWBH8eg2KuZ\nKQ4cS+d8+M4lYojYqqbIBPxypLKRhw6dGA4PdqF1XsiNyXKMlZ3RbcTEmomh/QzO\nZXmOEQmAlJUGQjTHUfcDNsIfN2uipVlwhSnENRSgawmN5gx9w1yDu4pFwse7ylQw\naezUqy3ZAgMBAAECggEAC3Ce8rp0BsX7CtdDvOPqMS4s9HAaUk7XNMzq4C1l+8OH\nGl+WAh6yHUaYDEn8yjRNs+barCfrQf5QBbeyKNbWBWkJe+f/CD3DmHF7bCP+BNOE\npt+3787BT6L//FURVW198Zg6Dpd7tyXLyXDtu0aCUgdvlTS9TvoBxJeLyzTh3iqO\nt1cSljQwtmYZGg+IQ7jdJ/cueEEl6boflI+/lPlqNZftAYYgZlA05tHzds6eaCaX\nxZldqM5p2soyOWCbLLT7pv+71xEk7trllQqvNy3C+s+eDHJdb7bBJvYWuecTV9+H\nPeOgck25wkvR5A3J4tdD8ukrME1XHFrZvLOmAsZR7QKBgQDZCDhDnTdPH9HDHx21\nZ0q3uuP2RkK9ewTBLHv/IC7Pk4D0T74BxAPVuf1LTUlC6GYMCbW9sDtj7TtEAj0B\nsu0le/CFCJpWktNh5uu4T2/AwtwtRUpwWh4bih25GDN7dBl9Oq9jcz8qT5l6N+/P\nkQ15y1BrGUcw3qJTXqm4tc+VcwKBgQDW6N3DPt26GdXb1RsbK9Na0cL4zIYunIZh\nlDjWs2OBXB2Le312sRNct8CBIj3PaxqrV+a++SNPX7K6QpXM51W03eUW/5A4CUNl\nWww/K0iffYsP2FVnGsKz/IkY9D1oARPo0DCVHIFznW1TXzBozodNZuoG4cvQ/QLL\niDFiUTp8gwKBgQCYao5g5aM3HSiJ+Gs7v2uYtlZr2RH70c4X/66hEC/vtS5F5U6S\nHN94lGKPJJrDs0QfRh5tNbuvxKXvcAb6D3c98NmMA+unyvtKcQqv6JGZ9P79iADs\nAE3Ol2OiXp2hIHraGIGdvQzqIPau/2OaCMtG8oLqg9kcN+4V0JAu2PgMgwKBgEFZ\nHdW40AM+x+DItC1W7jW3gunUhxi1T8dsIrxmX+N99x3qtwPYZGLVHRwnJVRk5P8l\nA20epLYGC3rHtHVSAqW0s2yC2X+wkWXIgbjTmImmyxpOVem8IWhJagbEfceaTEuG\nwr8Uo+hb/lpTn4y/ADVxDch58FfkF218REf5GyexAoGBAJVwEI4OO6y4zKuelUqb\nsmnDjohkLVc0Uc8sRVGJsNKGqY23VX/8/dZB6YfN0ZkPawlN21RsHccTZMtuJbh2\nWwAdBvLyGA4kKVEv6ERQwHi4PdkPGSYdaDbRqblcxicjxthhm//BHOQlBk/NyNRG\nKDbLYR3xds4SMGaSLaXUmFnf\n-----END PRIVATE KEY-----\n",
+  "client_email": "phone-numbers@phone-numbers-170313.iam.gserviceaccount.com",
+  "client_id": "107843953958682424685",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://accounts.google.com/o/oauth2/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/phone-numbers%40phone-numbers-170313.iam.gserviceaccount.com"
+}
